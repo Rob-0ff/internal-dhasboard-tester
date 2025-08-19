@@ -1,0 +1,383 @@
+-- =========================
+-- ENUM TYPES
+-- =========================
+CREATE TYPE status AS ENUM ('pending', 'in_progress', 'completed', 'unknown');
+CREATE TYPE exam_attempt_status_enum AS ENUM ('in_progress', 'completed', 'submitted');
+CREATE TYPE question_type_enum AS ENUM ('mcq', 'essay', 'true_false', 'short_answer');
+CREATE TYPE bloom_taxonomy_level_enum AS ENUM ('remember', 'understand', 'apply', 'analyze', 'evaluate', 'create');
+CREATE TYPE role_enum AS ENUM ('user', 'assistant', 'system');
+CREATE TYPE document_type_enum AS ENUM ('unknown', 'pdf', 'docx', 'txt', 'image');
+CREATE TYPE instruction_type_enum AS ENUM ('hint', 'explanation', 'step');
+-- extend these enums if needed
+
+-- =========================
+-- CORE TABLES
+-- =========================
+CREATE TABLE public.users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clerk_auth_id text NOT NULL UNIQUE,
+  email text NOT NULL UNIQUE,
+  created_at timestamptz DEFAULT now(),
+  last_active timestamptz DEFAULT now(),
+  first_name text,
+  last_name text,
+  username text,
+  image_url text,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.universities (
+  id serial PRIMARY KEY,
+  name text NOT NULL,
+  country text,
+  metadata jsonb DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE public.user_profiles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE REFERENCES public.users(id),
+  university_id integer REFERENCES public.universities(id),
+  degree text,
+  year_of_study integer,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  accepted_terms boolean NOT NULL DEFAULT false,
+  has_paid boolean DEFAULT true,
+  completed_onboarding boolean NOT NULL DEFAULT false,
+  playground_on boolean DEFAULT true,
+  completed_profile boolean NOT NULL DEFAULT false,
+  phone_number text,
+  CONSTRAINT user_profiles_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.beta_user_profiles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  phone_number text,
+  university text,
+  course text,
+  modules text,
+  persona text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  year_of_study text,
+  CONSTRAINT beta_user_profiles_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.modules (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  description text,
+  created_at timestamptz DEFAULT now(),
+  CONSTRAINT modules_pkey PRIMARY KEY (id)
+);
+
+-- =========================
+-- EXAMS
+-- =========================
+CREATE TABLE public.exams (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  module_id uuid NOT NULL REFERENCES public.modules(id),
+  status status DEFAULT 'pending',
+  title text,
+  exam_duration_minutes integer,
+  instructions_general text,
+  target_total_marks integer,
+  learning_outcomes_covered text[],
+  core_topics_covered text[],
+  version integer DEFAULT 1,
+  user_id uuid REFERENCES public.users(id),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT exams_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.exam_sections (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  exam_id uuid NOT NULL REFERENCES public.exams(id),
+  section_identifier text NOT NULL,
+  section_title text,
+  instructions_section text,
+  display_order smallint,
+  CONSTRAINT exam_sections_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.exam_questions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  exam_section_id uuid NOT NULL REFERENCES public.exam_sections(id),
+  question_reference_code text,
+  question_text text NOT NULL,
+  question_type question_type_enum NOT NULL,
+  marks integer NOT NULL,
+  bloom_taxonomy_level bloom_taxonomy_level_enum,
+  details jsonb,
+  topic_references text[],
+  learning_outcome_references text[],
+  display_order smallint,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT exam_questions_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.exam_attempts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  exam_id uuid NOT NULL REFERENCES public.exams(id),
+  user_id uuid NOT NULL REFERENCES public.users(id),
+  start_time timestamptz DEFAULT CURRENT_TIMESTAMP,
+  end_time timestamptz,
+  status exam_attempt_status_enum DEFAULT 'in_progress',
+  overall_score numeric,
+  last_updated timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT exam_attempts_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.user_exam_responses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.users(id),
+  exam_attempt_id uuid NOT NULL REFERENCES public.exam_attempts(id),
+  exam_question_id uuid NOT NULL REFERENCES public.exam_questions(id),
+  mcq_selected_index integer,
+  response_text text,
+  marks_awarded numeric,
+  grading_feedback text,
+  graded_by_user_id uuid,
+  graded_at timestamptz,
+  submission_time timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT user_exam_responses_pkey PRIMARY KEY (id)
+);
+
+-- =========================
+-- STUDY MATERIALS
+-- =========================
+CREATE TABLE public.documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  path text NOT NULL,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  module_id uuid REFERENCES public.modules(id),
+  bucket text,
+  user_id uuid REFERENCES public.users(id),
+  document_type document_type_enum NOT NULL DEFAULT 'unknown',
+  CONSTRAINT documents_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.flashcards (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES public.users(id),
+  module_id uuid NOT NULL REFERENCES public.modules(id),
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  status status NOT NULL DEFAULT 'pending',
+  title text,
+  CONSTRAINT flashcards_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.notes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES public.users(id),
+  module_id uuid NOT NULL REFERENCES public.modules(id),
+  path text,
+  raw_data text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  status status NOT NULL DEFAULT 'pending',
+  title text,
+  bucket text,
+  CONSTRAINT notes_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.quizzes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES public.users(id),
+  module_id uuid NOT NULL REFERENCES public.modules(id),
+  score double precision DEFAULT 0.0,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  completed_at timestamptz,
+  status status NOT NULL DEFAULT 'pending',
+  title text,
+  CONSTRAINT quizzes_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.user_modules (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES public.users(id),
+  module_id uuid NOT NULL REFERENCES public.modules(id),
+  progress double precision DEFAULT 0.0,
+  last_accessed timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
+  metadata jsonb,
+  CONSTRAINT user_modules_pkey PRIMARY KEY (id)
+);
+
+-- =========================
+-- FEEDBACK & WAITLIST
+-- =========================
+CREATE TABLE public.feedback (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  value text NOT NULL,
+  user_id uuid REFERENCES public.users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT feedback_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.waitlist (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  email text NOT NULL UNIQUE,
+  university text NOT NULL,
+  faculty text NOT NULL,
+  toughest_module text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT waitlist_pkey PRIMARY KEY (id)
+);
+
+-- =========================
+-- CONVERSATIONS & MESSAGES
+-- =========================
+CREATE TABLE public.conversations (
+  conversation_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  ended_at timestamptz,
+  context_type text,
+  context_id varchar,
+  initial_prompt_template_version varchar,
+  model_used varchar,
+  session_summary text,
+  metadata jsonb,
+  CONSTRAINT conversations_pkey PRIMARY KEY (conversation_id)
+);
+
+CREATE TABLE public.messages (
+  message_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL REFERENCES public.conversations(conversation_id),
+  sequence_number integer NOT NULL CHECK (sequence_number > 0),
+  role role_enum NOT NULL,
+  content text NOT NULL,
+  timestamp timestamptz NOT NULL DEFAULT now(),
+  is_pii_scrubbed boolean NOT NULL DEFAULT false,
+  prompt_tokens integer,
+  completion_tokens integer,
+  total_tokens integer,
+  processing_time_ms integer,
+  finish_reason varchar,
+  raw_request_payload_ref text,
+  raw_response_payload_ref text,
+  persona_snapshot jsonb,
+  notes_context_included boolean DEFAULT false,
+  chat_history_length integer,
+  metadata jsonb,
+  CONSTRAINT messages_pkey PRIMARY KEY (message_id)
+);
+
+CREATE TABLE public.message_feedback (
+  feedback_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  message_id uuid NOT NULL REFERENCES public.messages(message_id),
+  user_id uuid NOT NULL REFERENCES public.users(id),
+  conversation_id uuid NOT NULL REFERENCES public.conversations(conversation_id),
+  rating integer,
+  comment text,
+  feedback_tags text[],
+  timestamp timestamptz NOT NULL DEFAULT now(),
+  metadata jsonb,
+  CONSTRAINT message_feedback_pkey PRIMARY KEY (feedback_id)
+);
+
+-- =========================
+-- QUESTIONNAIRE
+-- =========================
+CREATE TABLE public.questionnaire_themes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  theme_ranking integer,
+  theme_title text NOT NULL UNIQUE,
+  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT questionnaire_themes_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.questionnaire_questions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  theme_id uuid NOT NULL REFERENCES public.questionnaire_themes(id),
+  question_text text NOT NULL,
+  question_order integer,
+  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT questionnaire_questions_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.questionnaire_options (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  question_id uuid NOT NULL REFERENCES public.questionnaire_questions(id),
+  option_text text NOT NULL,
+  option_order integer,
+  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT questionnaire_options_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.inferred_instructions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  option_id uuid NOT NULL REFERENCES public.questionnaire_options(id),
+  instruction_type instruction_type_enum NOT NULL,
+  instruction_text text NOT NULL,
+  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT inferred_instructions_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.user_questionnaire_responses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.users(id),
+  question_id uuid NOT NULL REFERENCES public.questionnaire_questions(id),
+  selected_option_id uuid NOT NULL REFERENCES public.questionnaire_options(id),
+  response_timestamp timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT user_questionnaire_responses_pkey PRIMARY KEY (id)
+);
+
+-- =========================
+-- PAYMENTS
+-- =========================
+CREATE TABLE public.payments (
+  id serial PRIMARY KEY,
+  paystack_transaction_id bigint NOT NULL UNIQUE,
+  paystack_reference varchar UNIQUE,
+  domain varchar,
+  status varchar NOT NULL,
+  amount integer NOT NULL,
+  currency varchar NOT NULL,
+  message text,
+  gateway_response text,
+  paid_at timestamptz,
+  created_at_paystack timestamptz,
+  channel varchar,
+  ip_address inet,
+  authorization_code varchar,
+  bin varchar,
+  last4 varchar,
+  exp_month varchar,
+  exp_year varchar,
+  card_type varchar,
+  bank varchar,
+  country_code varchar,
+  brand varchar,
+  reusable boolean,
+  signature varchar,
+  account_name varchar,
+  customer_id_paystack bigint,
+  customer_code varchar,
+  customer_email varchar,
+  customer_first_name varchar,
+  customer_last_name varchar,
+  customer_phone varchar,
+  fees integer,
+  fees_split jsonb,
+  plan_object jsonb,
+  subaccount jsonb,
+  split jsonb,
+  order_id varchar,
+  paid_timeline jsonb,
+  raw_payload jsonb,
+  db_created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  db_updated_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  user_id uuid REFERENCES public.users(id)
+);
