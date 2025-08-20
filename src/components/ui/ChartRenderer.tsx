@@ -21,7 +21,7 @@ interface ChartRendererProps {
 }
 
 export function ChartRenderer({ suggestion, data }: ChartRendererProps) {
-  const { type, title, props } = suggestion;
+  const { type, props } = suggestion;
 
   // This switch statement acts as a dynamic router for your charts
   switch (type) {

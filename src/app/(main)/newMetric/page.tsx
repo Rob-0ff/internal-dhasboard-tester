@@ -47,7 +47,7 @@ interface ChartSuggestion {
   props: {
     index: string;
     categories: string[];
-    [key: string]: any;
+    // [key: string]: any;
   };
 }
 type DataRow = Record<string, any>;
@@ -290,10 +290,8 @@ export default function NewMetricPage() {
         </CardContent>
       </Card>
 
-      {/* Render all results, loading, and empty states here */}
       <div className="mt-8">{renderResults()}</div>
 
-      {/* The Save Metric Dialog */}
       <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>

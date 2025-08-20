@@ -22,7 +22,7 @@ export async function decrypt(input: string): Promise<any> {
     });
     return payload;
   } catch (error) {
-    // This will be caught if the token is expired or invalid
+    console.error("Decryption error:", error);
     return null;
   }
 }

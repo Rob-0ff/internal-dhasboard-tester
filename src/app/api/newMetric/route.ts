@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from '@/lib/supabaseClient'; // Adjust path if needed
 import fs from 'fs/promises';
 import path from 'path';
+import { NextRequest, NextResponse } from "next/server";
 
 // --- PROMPT ENGINEERING ---
 
@@ -44,11 +45,11 @@ function extractJson(text: string): string | null {
 }
 
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { query } = await req.json();
 
   if (!query) {
-    return new Response(JSON.stringify({ error: "Query is required." }), { status: 400 });
+    return new NextResponse(JSON.stringify({ error: "Query is required." }), { status: 400 });
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
     }
 
     if (!sqlQuery) {
-      return new Response(JSON.stringify({ error: "Sorry, I can only process data queries." }), { status: 400 });
+      return new NextResponse(JSON.stringify({ error: "Sorry, I can only process data queries." }), { status: 400 });
     }
 
     // --- STEP 2: EXECUTE SQL QUERY ---
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
 
     if (error) throw new Error(`Database error: ${error.message}`);
     if (!data || data.length === 0) {
-      return new Response(JSON.stringify({ sqlQuery, data: [], chartSuggestions: [] }), { status: 200 });
+      return new NextResponse(JSON.stringify({ sqlQuery, data: [], chartSuggestions: [] }), { status: 200 });
     }
 
     // --- STEP 3: DATA-TO-CHART ---
@@ -98,11 +99,13 @@ export async function POST(req: Request) {
 
     const { chartSuggestions } = JSON.parse(chartJson || '{ "chartSuggestions": [] }');
 
+    console.log("Generated Chart Suggestions:", chartSuggestions);
+
     // --- STEP 4: COMBINE AND RETURN ---
-    return new Response(JSON.stringify({ sqlQuery, data, chartSuggestions }), { status: 200 });
+    return new NextResponse(JSON.stringify({ sqlQuery, data, chartSuggestions }), { status: 200 });
 
   } catch (error: any) {
     console.error("API Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }

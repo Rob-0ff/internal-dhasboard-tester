@@ -1,8 +1,9 @@
 // src/app/api/chat/route.ts (MODIFIED FOR STREAMING)
-import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from '@/lib/supabaseClient';
 import fs from 'fs';
 import path from 'path';
+import { NextResponse } from "next/server";
 
 // Role 1: The SQL Coder. Strict, non-conversational, returns only JSON.
 const textToSqlSystemPrompt = `
@@ -50,7 +51,7 @@ export async function GET() {
     role: 'model',
     content: "Hello! I'm your internal analytics assistant. You can ask me questions about our user data, exams, modules, and more. For example, 'How many users have signed up in the last month?'"
   };
-  return new Response(JSON.stringify(welcomeMessage), {
+  return new NextResponse(JSON.stringify(welcomeMessage), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
   const { history } = await req.json();
 
   if (!history || history.length === 0) {
-    return new Response("Bad Request: History is required.", { status: 400 });
+    return new NextResponse("Bad Request: History is required.", { status: 400 });
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
     }
 
     if (!sqlQuery) {
-      return new Response("I'm sorry, I can only process read-only requests. Please ask a question about the data.", { status: 200 });
+      return new NextResponse("I'm sorry, I can only process read-only requests. Please ask a question about the data.", { status: 200 });
     }
 
     // --- STEP 2: EXECUTE SQL QUERY ---
@@ -94,11 +95,11 @@ export async function POST(req: Request) {
 
     if (error) {
       // Return a user-friendly error if the SQL fails
-      return new Response("There was an error running the query against the database. Error: " + error.message, { status: 500 });
+      return new NextResponse("There was an error running the query against the database. Error: " + error.message, { status: 500 });
     }
     
     if (!data || data.length === 0) {
-      return new Response("I found no data for your request. Try asking with a different time frame or criteria.", { status: 200 });
+      return new NextResponse("I found no data for your request. Try asking with a different time frame or criteria.", { status: 200 });
     }
 
     // --- STEP 3: DATA-TO-TEXT (INTERPRETATION & STREAMING) ---
@@ -122,11 +123,11 @@ export async function POST(req: Request) {
       },
     });
 
-    return new Response(stream);
+    return new NextResponse(stream);
 
   } catch (error: any) {
     console.error("API Error:", error);
     // This catches errors like invalid JSON from the model or other unexpected issues
-    return new Response("An unexpected error occurred. Please check the server logs.", { status: 500 });
+    return new NextResponse("An unexpected error occurred. Please check the server logs.", { status: 500 });
   }
 }

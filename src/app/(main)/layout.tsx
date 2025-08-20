@@ -1,5 +1,6 @@
 import { ChatWidget } from "@/components/ui/chatWidget";
 import { logout } from "../actions";
+import Image from "next/image";
 
 export default function mainLayout({
   children,
@@ -10,10 +11,12 @@ export default function mainLayout({
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="bg-white p-4 border-b-2 border-purple-500">
         <div className="container mx-auto flex items-center justify-between">
-          <img
+          <Image
             src="/bag-learning-logo.png"
             alt="Bag Logo"
-            className="h-14 w-auto"
+            // className="h-auto"
+            height={75}
+            width={75}
           />
           <nav className="flex items-center gap-2">
             <a
