@@ -1,11 +1,10 @@
--- WARNING: FOR TESTING PURPOSES ONLY. HIGHLY INSECURE.
+-- TODO: MAKE THIS FUNCTION MORE SECURE
 -- This function allows any SQL query to be executed.
 CREATE OR REPLACE FUNCTION public.execute_sql(sql_query text)
 RETURNS json
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  -- Declare a variable to hold the final JSON result.
   result_json json;
 BEGIN
   -- We build a new query string that wraps the user's provided SQL
@@ -14,7 +13,6 @@ BEGIN
   EXECUTE 'SELECT json_agg(t) FROM (' || sql_query || ') t'
   INTO result_json;
 
-  -- Return the captured JSON result.
   RETURN result_json;
 END;
 $$;

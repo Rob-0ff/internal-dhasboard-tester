@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,10 +13,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/app/actions";
+import { LoaderDots } from "@/components/ui/loaderDots";
 
 export default function Home() {
   const [error, setError] = useState("");
-
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get("error");
@@ -24,6 +26,18 @@ export default function Home() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  async function handleLogin(formData: FormData) {
+    setLoading(true);
+    setError("");
+    try {
+      await login(formData);
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError("Login failed. Please try again.");
+    }
+    setLoading(false);
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -38,7 +52,7 @@ export default function Home() {
             <CardTitle>Login to Bag Dashboard</CardTitle>
           </div>
         </CardHeader>
-        <form action={login}>
+        <form action={handleLogin}>
           <CardContent className="flex-1">
             <div className="flex flex-col gap-6 h-full">
               <div className="grid gap-2">
@@ -57,8 +71,9 @@ export default function Home() {
             <Button
               type="submit"
               className="w-full bg-purple-500 hover:bg-purple-600"
+              disabled={loading}
             >
-              Login
+              {!loading ? "Login" : <LoaderDots />}
             </Button>
           </CardFooter>
         </form>

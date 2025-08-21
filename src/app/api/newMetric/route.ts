@@ -1,6 +1,5 @@
-// src/app/api/chat/route.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { supabase } from '@/lib/supabaseClient'; // Adjust path if needed
+import { supabase } from '@/lib/supabaseClient';
 import fs from 'fs/promises';
 import path from 'path';
 import { NextRequest, NextResponse } from "next/server";
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
     // --- STEP 1: TEXT-TO-SQL ---
     const dbSchema = await getSchema();
     const sqlModel = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite", // Use 1.5-flash for better reasoning
+      model: "gemini-2.5-flash-lite", 
       systemInstruction: textToSqlSystemPrompt + `\nSchema:\n${dbSchema}`,
     });
 

@@ -1,7 +1,6 @@
-// src/components/ChatWidget.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,12 +10,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bot, User, MessageSquare, X } from "lucide-react";
+import { Bot, User, MessageSquareText, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Message {
   role: "user" | "model";
-  content: string;
+  content: string | ReactNode;
+}
+
+function LoaderDots() {
+  return (
+    <span className="flex gap-1">
+      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+    </span>
+  );
 }
 
 export function ChatWidget() {
@@ -35,7 +44,6 @@ export function ChatWidget() {
     });
   }, [messages]);
 
-  // Initialize chat only when the widget is first opened
   useEffect(() => {
     const initializeChat = async () => {
       if (isOpen && messages.length === 0) {
@@ -55,9 +63,8 @@ export function ChatWidget() {
       }
     };
     initializeChat();
-  }, [isOpen, messages.length]); // Dependencies ensure it runs only when needed
+  }, [isOpen, messages.length]);
 
-  // handleSubmit logic (remains the same)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -66,7 +73,7 @@ export function ChatWidget() {
     setMessages((prev) => [
       ...prev,
       userMessage,
-      { role: "model", content: "" },
+      { role: "model", content: <LoaderDots /> },
     ]);
     setInput("");
     setIsLoading(true);
@@ -105,7 +112,6 @@ export function ChatWidget() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      {/* The Chat Window (conditionally rendered) */}
       {isOpen && (
         <Card className="w-96 h-[600px] flex flex-col shadow-xl mb-2">
           <CardHeader className="flex flex-row items-center justify-between border-b">
@@ -157,18 +163,6 @@ export function ChatWidget() {
                 )}
               </div>
             ))}
-            {isLoading && messages[messages.length - 1]?.role === "user" && (
-              <div className="flex items-start gap-3">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback>
-                    <Bot size={20} />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-                  <p className="text-sm">Thinking...</p>
-                </div>
-              </div>
-            )}
           </CardContent>
           <div className="p-4 border-t">
             <form onSubmit={handleSubmit} className="flex gap-2">
@@ -190,13 +184,12 @@ export function ChatWidget() {
         </Card>
       )}
 
-      {/* The Chat Bubble / Trigger */}
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
           className="w-16 h-16 rounded-full shadow-lg bg-purple-500 hover:bg-purple-600 transition-colors"
         >
-          <MessageSquare size={24} />
+          <MessageSquareText />
         </Button>
       )}
     </div>

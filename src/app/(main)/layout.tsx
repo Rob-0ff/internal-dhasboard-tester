@@ -21,20 +21,22 @@ export default function mainLayout({
           <nav className="flex items-center gap-2">
             <a
               href="/dashboard"
-              className="text-gray-700 hover:bg-purple-600 hover:text-white px-4 py-2 rounded-md transition-colors duration-200"
+              className="text-gray-700 hover:bg-purple-500 hover:text-white px-4 py-2 rounded-md transition-colors duration-200"
             >
               Dashboard
             </a>
             <button
               onClick={logout}
-              className="text-gray-700 hover:bg-purple-600 hover:text-white px-4 py-2 rounded-md transition-colors duration-200"
+              className="text-gray-700 hover:bg-purple-500 hover:text-white px-4 py-2 rounded-md transition-colors duration-200"
             >
               Logout
             </button>
           </nav>
         </div>
       </header>
-      <main className="flex-1 container mx-auto p-8">{children}</main>
+      <main className="flex-1 container justify-center w-[100%]">
+        {children}
+      </main>
       <ChatWidget />
     </div>
   );

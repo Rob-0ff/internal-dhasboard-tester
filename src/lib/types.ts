@@ -12,4 +12,11 @@ export interface SavedMetric {
     };
   };
   created_at: string;
+  is_on_dashboard: boolean;
+  dashboard_layout?: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  };
 }

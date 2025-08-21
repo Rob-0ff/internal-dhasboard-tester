@@ -11,7 +11,7 @@ export async function encrypt(payload: any) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('1h') // Token expires in 1 hour
+    .setExpirationTime('1h')
     .sign(key);
 }
 
@@ -46,10 +46,10 @@ export async function login(formData: FormData) {
       // 'httpOnly' makes it inaccessible to client-side JavaScript, which is more secure.
       cookies()).set('session', encryptedSession, { httpOnly: true
         , secure: process.env.NODE_ENV === 'production'
-        , maxAge: 60 * 60 /* 1 hour */ });
+        , maxAge: 60 * 60});
 
     // 5. Redirect the user to the protected dashboard page
-    redirect('/dashboard'); // Or '/chat' or any other protected page
+    redirect('/dashboard');
   }
 
   // If the password does not match, you could redirect back with an error
@@ -58,9 +58,7 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-  // Clear the session cookie
   (await
-    // Clear the session cookie
     cookies()).set('session', '', { expires: new Date(0) });
   redirect('/');
 }

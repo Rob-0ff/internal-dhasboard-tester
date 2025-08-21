@@ -1,4 +1,3 @@
-// src/app/api/chat/route.ts (MODIFIED FOR STREAMING)
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from '@/lib/supabaseClient';
 import fs from 'fs';
@@ -31,6 +30,9 @@ You will be given the user's original question and the data retrieved from the d
 - Do not mention that you are looking at JSON or a database. Speak as if you found the answer yourself.
 - Do not make up information that is not present in the data.
 - Your response will be streamed, so start answering directly.
+- If the data is empty or does not answer the question, politely explain that you found no relevant information.
+- Given that the content returned will be placed inside paragraph tags (<p className="text-sm whitespace-pre-wrap">), provide the answer formatted in HTML or plain text format
+  such that the output is readable and well-structured.
 `;
 
 
@@ -49,7 +51,8 @@ function extractJson(text: string): string | null {
 export async function GET() {
   const welcomeMessage = {
     role: 'model',
-    content: "Hello! I'm your internal analytics assistant. You can ask me questions about our user data, exams, modules, and more. For example, 'How many users have signed up in the last month?'"
+    content: `Hello! I'm your internal analytics assistant. You can ask me questions about our user data, exams, modules, 
+    and more. For example, 'How many users have signed up in the last month?'`
   };
   return new NextResponse(JSON.stringify(welcomeMessage), {
     status: 200,
@@ -73,7 +76,7 @@ export async function POST(req: Request) {
     // --- STEP 1: TEXT-TO-SQL ---    
     const textToSqlModel = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-lite",
-      systemInstruction: textToSqlSystemPrompt + `\nHere is the database schema:\n${dbSchema}`,
+      systemInstruction: textToSqlSystemPrompt + `\nHere is the database schema:\n${dbSchema}.`,
     });
 
     const sqlResult = await textToSqlModel.generateContent(lastUserMessage);
@@ -94,7 +97,6 @@ export async function POST(req: Request) {
     const { data, error } = await supabase.rpc("execute_sql", { sql_query: sqlQuery });
 
     if (error) {
-      // Return a user-friendly error if the SQL fails
       return new NextResponse("There was an error running the query against the database. Error: " + error.message, { status: 500 });
     }
     
@@ -112,7 +114,6 @@ export async function POST(req: Request) {
     
     const streamResult = await dataToTextModel.generateContentStream(interpretationPrompt);
 
-    // Create and return the streaming response
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -127,7 +128,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("API Error:", error);
-    // This catches errors like invalid JSON from the model or other unexpected issues
     return new NextResponse("An unexpected error occurred. Please check the server logs.", { status: 500 });
   }
 }

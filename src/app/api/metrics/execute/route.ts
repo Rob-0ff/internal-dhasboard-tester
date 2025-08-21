@@ -1,5 +1,4 @@
-// src/app/api/metrics/execute/route.ts
-import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'; // Use the admin client
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin'; 
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -10,14 +9,12 @@ export async function POST(req: NextRequest) {
       return new NextResponse(JSON.stringify({ error: "SQL query is required." }), { status: 400 });
     }
 
-    // Use the Supabase RPC function to safely execute the read-only query
     const { data, error } = await supabase.rpc("execute_sql", { sql_query });
 
     if (error) {
       return new NextResponse(`Database error:, ${error.message}`);
     }
 
-    // Return just the data array directly
     return new NextResponse(JSON.stringify(data), { status: 200 });
 
   } catch (error: any) {

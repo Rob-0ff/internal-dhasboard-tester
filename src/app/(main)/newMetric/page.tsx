@@ -137,7 +137,6 @@ export default function NewMetricPage() {
     }
   };
 
-  // Helper function to render the results or empty/loading states
   const renderResults = () => {
     if (isLoading) {
       return (
@@ -191,14 +190,12 @@ export default function NewMetricPage() {
     if (data.length > 0) {
       return (
         <div className="space-y-8">
-          {/* Save Button is prominent when results are shown */}
           <div className="text-center">
             <Button onClick={() => setIsSaveDialogOpen(true)}>
               Save as New Metric
             </Button>
           </div>
 
-          {/* Chart Carousel Section */}
           {chartSuggestions.length > 0 && (
             <Card>
               <CardHeader>
@@ -230,7 +227,6 @@ export default function NewMetricPage() {
             </Card>
           )}
 
-          {/* Data Table Section */}
           <Card>
             <CardHeader>
               <CardTitle>Raw Data</CardTitle>
@@ -263,7 +259,7 @@ export default function NewMetricPage() {
       );
     }
 
-    return null; // Should not be reached, but good practice
+    return null;
   };
 
   return (
@@ -293,11 +289,12 @@ export default function NewMetricPage() {
       <div className="mt-8">{renderResults()}</div>
 
       <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Save New Metric</DialogTitle>
             <DialogDescription>
               Give your new metric a name and choose the default visualization.
+              <br />
               This will add it to your main dashboard.
             </DialogDescription>
           </DialogHeader>
@@ -308,7 +305,7 @@ export default function NewMetricPage() {
                 id="metric-name"
                 value={newMetricName}
                 onChange={(e) => setNewMetricName(e.target.value)}
-                placeholder="e.g., Monthly User Signups by Country"
+                placeholder={"E.g. User Signups by Universities"}
               />
             </div>
 
