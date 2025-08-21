@@ -51,8 +51,7 @@ function extractJson(text: string): string | null {
 export async function GET() {
   const welcomeMessage = {
     role: 'model',
-    content: `Hello! I'm your internal analytics assistant. You can ask me questions about our user data, exams, modules, 
-    and more. For example, 'How many users have signed up in the last month?'`
+    content: `Hello! I'm your internal analytics assistant. You can ask me questions about our user data, exams, modules, and more. For example, 'How many users have signed up in the last month?'`
   };
   return new NextResponse(JSON.stringify(welcomeMessage), {
     status: 200,

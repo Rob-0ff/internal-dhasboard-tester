@@ -7,8 +7,11 @@ interface ChartSuggestion {
   title: string;
   props: {
     index: string;
-    categories: string[];
-    [key: string]: any; // TODO: Define more specific types for props
+    // 'categories' is for multi-series charts, 'category' is for single-series like Donut
+    categories?: string[];
+    category?: string;
+    colors?: string[];
+    [key: string]: any;
   };
 }
 
@@ -20,18 +23,47 @@ interface ChartRendererProps {
 export function ChartRenderer({ suggestion, data }: ChartRendererProps) {
   const { type, props } = suggestion;
 
+  const { title, ...chartProps } = props;
+
   switch (type) {
     case "BarChart":
-      return <BarChart data={data} {...props} yAxisWidth={48} />;
+      return (
+        <BarChart
+          data={data}
+          index={chartProps.index}
+          categories={chartProps.categories ?? []}
+          colors={chartProps.colors}
+          yAxisWidth={48}
+          showXAxis={true}
+        />
+      );
 
     case "LineChart":
-      return <LineChart data={data} {...props} yAxisWidth={48} />;
+      return (
+        <LineChart
+          data={data}
+          index={chartProps.index}
+          categories={chartProps.categories ?? []}
+          colors={chartProps.colors}
+          yAxisWidth={48}
+          connectNulls={true}
+        />
+      );
 
     case "AreaChart":
-      return <AreaChart data={data} {...props} yAxisWidth={48} />;
+      return (
+        <AreaChart
+          data={data}
+          index={chartProps.index}
+          categories={chartProps.categories ?? []}
+          colors={chartProps.colors}
+          yAxisWidth={48}
+          connectNulls={true}
+        />
+      );
 
     case "DonutChart":
-      return <DonutChart data={data} {...props} />;
+      return <DonutChart className="mx-auto" data={data} {...chartProps} />;
 
     default:
       return (

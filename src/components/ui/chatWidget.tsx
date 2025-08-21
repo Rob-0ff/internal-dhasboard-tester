@@ -12,20 +12,11 @@ import {
 } from "@/components/ui/card";
 import { Bot, User, MessageSquareText, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LoaderDots } from "@/components/ui/loaderDots";
 
 interface Message {
   role: "user" | "model";
   content: string | ReactNode;
-}
-
-function LoaderDots() {
-  return (
-    <span className="flex gap-1">
-      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-    </span>
-  );
 }
 
 export function ChatWidget() {

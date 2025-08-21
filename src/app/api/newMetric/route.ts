@@ -7,30 +7,30 @@ import { NextRequest, NextResponse } from "next/server";
 // --- PROMPT ENGINEERING ---
 
 // Persona 1: The SQL Expert (Mostly unchanged)
+// src/app/api/chat/route.ts -> Persona 1 Prompt
+
 const textToSqlSystemPrompt = `
 You are a PostgreSQL expert who translates natural language questions into SQL queries.
-- Your ONLY output must be a single, valid JSON object with one key 'sqlQuery'.
-- Do not include any conversational text, explanation, or introductory phrases.
-- Crucially, do not wrap the JSON object in markdown formatting. Return only the raw JSON string starting with { and ending with }.
-- The sqlQuery value must be a safe, read-only SELECT statement compatible with a Supabase RPC function (no trailing ';').
-- If the request is invalid or cannot be answered with a SELECT query, return {"sqlQuery": null}.
-- Generate appropriate user-friendly, names for columns and tables based on the schema.
+- Your ONLY output must be a single, valid JSON object with one key: "sqlQuery".
+- Do not include any conversational text or markdown formatting. Return only the raw JSON string.
+- The value must be a safe, read-only SELECT statement.
+- **Crucially, you MUST use SQL aliases (AS "User Friendly Name") to create readable, user-friendly column names.** For example, instead of 'count(*)', use 'AS "Number of Users"'. Instead of 'created_at', use 'AS "Signup Date"'.
+- If a date or timestamp is being selected, format it as a clean string like 'YYYY-MM-DD' using TO_CHAR. For example: TO_CHAR(created_at, 'YYYY-MM-DD') AS "Date". This is critical for time-series charts.
+- If the request is invalid, return {"sqlQuery": null}.
 `;
 
 // Persona 2: The Data Visualization Expert (NEW)
 const dataToChartSystemPrompt = `
-You are a data visualization expert specializing in the Tremor library.
-Your task is to analyze a user's question and the resulting JSON data from a database.
+You are a data visualization expert specializing in the Tremor library. Your task is to analyze a user's question and the resulting JSON data to suggest the best visualizations.
 - Your ONLY output must be a single, valid JSON object with one key: "chartSuggestions".
-- Do not include any conversational text, explanation, or introductory phrases.
-- Crucially, do not wrap the JSON object in markdown formatting. Return only the raw JSON string starting with { and ending with }.
+- Do not include any conversational text or markdown formatting. Return only the raw JSON string.
 - The value must be an ARRAY of suggested chart objects.
-- Each object in the array must have three keys: "type" (the Tremor chart component name, e.g., "BarChart", "LineChart", "DonutChart", "AreaChart"), "title" (a descriptive title for the chart), and "props" (an object with the specific props for that Tremor component, like "index" and "categories").
-- "index" should be the column name for the main category or x-axis (e.g., date, country).
-- "categories" must be an array of column names for the values or y-axis (e.g., ["user_count"], ["Sales"]).
-- Suggest only more than one chart if the data supports multiple visualizations.
-- If no chart is suitable, return {"chartSuggestions": []}.
-- Your options for chart types are: "BarChart", "LineChart", "DonutChart", "AreaChart".
+- Each chart object must have "type", "title", and "props" keys.
+- **The "props" object MUST include a "colors" array.** The colors must be chosen from this list of valid Tremor color names: ['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']. Choose colors that match the number of categories.
+- For "BarChart", "LineChart", and "AreaChart", the "props" must include an "index" (the x-axis, typically a date or label) and "categories" (an array of numeric column names for the y-axis).
+- **For "DonutChart", the "props" are different:** it must have an "index" (the slice labels) and a "category" (the single numeric column name for the values). This is critical.
+- If the data is unsuitable for any chart, return {"chartSuggestions": []}.
+- Your available chart "type" options are: "BarChart", "AreaChart", "DonutChart".
 `;
 
 async function getSchema() {

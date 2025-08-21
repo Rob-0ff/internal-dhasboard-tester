@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { LoaderDots } from "@/components/ui/loaderDots";
 
 // Define types for our state
 interface ChartSuggestion {
@@ -69,6 +70,7 @@ export default function NewMetricPage() {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [newMetricName, setNewMetricName] = useState("");
   const [selectedChartIndex, setSelectedChartIndex] = useState("0");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +104,7 @@ export default function NewMetricPage() {
   };
 
   const handleSaveMetric = async () => {
+    setIsSaving(true);
     if (!newMetricName.trim()) {
       alert("Please provide a name for your metric.");
       return;
@@ -134,6 +137,8 @@ export default function NewMetricPage() {
       setNewMetricName("");
     } catch (error: any) {
       alert(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -338,7 +343,10 @@ export default function NewMetricPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveMetric}>Save Metric</Button>
+
+            <Button onClick={handleSaveMetric} disabled={!newMetricName.trim()}>
+              {isSaving ? <LoaderDots /> : <p>Save Metric</p>}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
